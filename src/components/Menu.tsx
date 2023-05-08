@@ -3,6 +3,9 @@ import {
   IonIcon,
   IonItem,
   IonLabel,
+  IonTitle,
+  IonHeader,
+  IonToolbar,
   IonList,
   IonListHeader,
   IonMenu,
@@ -11,8 +14,23 @@ import {
 } from '@ionic/react';
 
 import { useLocation } from 'react-router-dom';
-import { archiveOutline, archiveSharp, bookmarkOutline, heartOutline, heartSharp, mailOutline, mailSharp, paperPlaneOutline, paperPlaneSharp, trashOutline, trashSharp, warningOutline, warningSharp } from 'ionicons/icons';
+import {
+  homeOutline,
+  homeSharp,
+  listOutline,
+  listSharp,
+  logInSharp,
+  logInOutline,
+  logOutSharp,
+  logOutOutline,
+  addSharp, addOutline, alarmOutline, alarmSharp, alertOutline, alertSharp, logIn
+} from 'ionicons/icons';
 import './Menu.css';
+import React, { useState, useEffect } from "react";
+import {useDispatch, useSelector, useStore} from "react-redux";
+import {RootState} from "../services/reducers";
+import {isNotExpired} from "../services/rest/security-helper";
+import {loggedOut} from "../services/actions/users";
 
 interface AppPage {
   url: string;
@@ -23,78 +41,105 @@ interface AppPage {
 
 const appPages: AppPage[] = [
   {
-    title: 'Inbox',
-    url: '/page/Inbox',
-    iosIcon: mailOutline,
-    mdIcon: mailSharp
-  },
-  {
-    title: 'Outbox',
-    url: '/page/Outbox',
-    iosIcon: paperPlaneOutline,
-    mdIcon: paperPlaneSharp
-  },
-  {
-    title: 'Favorites',
-    url: '/page/Favorites',
-    iosIcon: heartOutline,
-    mdIcon: heartSharp
-  },
-  {
-    title: 'Archived',
-    url: '/page/Archived',
-    iosIcon: archiveOutline,
-    mdIcon: archiveSharp
-  },
-  {
-    title: 'Trash',
-    url: '/page/Trash',
-    iosIcon: trashOutline,
-    mdIcon: trashSharp
-  },
-  {
-    title: 'Spam',
-    url: '/page/Spam',
-    iosIcon: warningOutline,
-    mdIcon: warningSharp
+    title: 'Home',
+    url: '/home',
+    iosIcon: homeOutline,
+    mdIcon: homeSharp
   }
 ];
 
-const labels = ['Family', 'Friends', 'Notes', 'Work', 'Travel', 'Reminders'];
+var secureAppPage: AppPage[] = [
+
+];
+
+function AddMenu(item : AppPage)
+{
+  if (secureAppPage.some(e => e.url === item.url) == false) {
+    secureAppPage.push(item );
+  }
+}
+
+
 
 const Menu: React.FC = () => {
   const location = useLocation();
 
-  return (
-    <IonMenu contentId="main" type="overlay">
-      <IonContent>
-        <IonList id="inbox-list">
-          <IonListHeader>Inbox</IonListHeader>
-          <IonNote>hi@ionicframework.com</IonNote>
-          {appPages.map((appPage, index) => {
-            return (
-              <IonMenuToggle key={index} autoHide={false}>
-                <IonItem className={location.pathname === appPage.url ? 'selected' : ''} routerLink={appPage.url} routerDirection="none" lines="none" detail={false}>
-                  <IonIcon aria-hidden="true" slot="start" ios={appPage.iosIcon} md={appPage.mdIcon} />
-                  <IonLabel>{appPage.title}</IonLabel>
-                </IonItem>
-              </IonMenuToggle>
-            );
-          })}
-        </IonList>
+  const {user, authenticationInformation } = useSelector((state: RootState) => state.user);
 
-        <IonList id="labels-list">
-          <IonListHeader>Labels</IonListHeader>
-          {labels.map((label, index) => (
-            <IonItem lines="none" key={index}>
-              <IonIcon aria-hidden="true" slot="start" icon={bookmarkOutline} />
-              <IonLabel>{label}</IonLabel>
-            </IonItem>
-          ))}
-        </IonList>
-      </IonContent>
-    </IonMenu>
+  const dispatch = useDispatch();
+  const store = useStore();
+  const token : String = "";
+  var securityItem = null;
+
+  if(isNotExpired(authenticationInformation))
+  {
+    securityItem = {
+      title: 'Logout ' + user?.fullName,
+      url: '/home',
+      iosIcon: logOutOutline,
+      mdIcon: logOutSharp,
+      onClick: () => {dispatch(loggedOut())}
+    }
+
+
+
+  }
+  else{
+    securityItem =
+        {
+          title: 'Login',
+          url: '/login',
+          iosIcon: logInOutline,
+          mdIcon: logInSharp,
+          onClick: (e: any) => {}
+        }
+
+    secureAppPage = [];
+
+  }
+
+  return (
+      <IonMenu contentId="main" type="overlay">
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Menu</IonTitle>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent>
+          <IonListHeader>Welcome</IonListHeader>
+          <IonNote>{isNotExpired(authenticationInformation) ? 'Hello ' + user?.fullName : 'Not Logged in'}</IonNote>
+          <IonList>
+            {appPages.map((appPage, index) => {
+              return (
+                  <IonMenuToggle key={index} autoHide={false}>
+                    <IonItem routerLink={appPage.url} routerDirection="none">
+                      <IonIcon slot="start" ios={appPage.iosIcon} md={appPage.mdIcon} />
+                      <IonLabel>{appPage.title}</IonLabel>
+                    </IonItem>
+                  </IonMenuToggle>
+              );
+            })}
+            {secureAppPage.map((appPage, index) => {
+              return (
+                  <IonMenuToggle key={index} autoHide={false}>
+                    <IonItem className={location.pathname === appPage.url ? 'selected' : ''} routerLink={appPage.url} routerDirection="none" lines="none" detail={false}>
+                      <IonIcon slot="start" ios={appPage.iosIcon} md={appPage.mdIcon} />
+                      <IonLabel>{appPage.title}</IonLabel>
+                    </IonItem>
+                  </IonMenuToggle>
+              );
+            })}
+            <IonMenuToggle key={'sec2'} auto-hide="false">
+              <IonItem routerLink={securityItem.url} lines="none" onClick={securityItem.onClick} >
+                <IonIcon slot="start" ios={securityItem.iosIcon} md={securityItem.mdIcon} />
+                <IonLabel>{securityItem.title}</IonLabel>
+              </IonItem>
+            </IonMenuToggle>
+          </IonList>
+        </IonContent>
+      </IonMenu>
   );
 };
+
 
 export default Menu;
