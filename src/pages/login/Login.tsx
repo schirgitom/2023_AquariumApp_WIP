@@ -20,6 +20,7 @@ import {IConfig} from "../../services/rest/iconfig";
 import {loggedIn} from "../../services/actions/users";
 import config from "../../services/rest/server-config"
 import {Appstorage} from "../../services/utils/appstorage";
+import Register from "../register/Register";
 type formData = Readonly<LoginRequest>;
 
 const formDescription: FormDescription<formData> = {
@@ -88,6 +89,7 @@ export const Login: React.FunctionComponent<RouteComponentProps<any>> = (props) 
 
             <IonContent>
                 <Form handleSubmit={submit}/>
+                <IonButton expand="block"  onClick={() =>props.history.replace('/register') }>No Account? Register</IonButton>
             </IonContent>
         </IonPage>
     );
