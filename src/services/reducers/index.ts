@@ -2,13 +2,13 @@ import { combineReducers } from "@reduxjs/toolkit";
 import {user, currentaquarium} from "./users";
 import {formBuilderReducer} from "../utils/form-builder";
 import {items} from "./items";
-//import {item} from "./item";
+import {item} from "./item";
 
 
 const rootReducer = combineReducers({
     user,
     items,
-   // item,
+    item,
     currentaquarium,
     formBuilder: formBuilderReducer
 });

@@ -27,7 +27,8 @@ import Login from "./pages/login/Login";
 import Register from "./pages/register/Register";
 import {SecureRoute} from "./components/SecureRoute";
 import ItemsList from "./pages/items/ItemsList";
-//import ItemDetail from "./pages/itemdetail/ItemDetail";
+import ItemDetail from "./pages/itemdetail/ItemDetail";
+import AddEditItem from "./pages/itemdetail/AddEditItem";
 
 setupIonicReact();
 
@@ -43,7 +44,10 @@ const App: React.FC = () => {
             <Route path="/register" component={Register("add")} exact={true} />
             <Route path="/user" component={Register("edit")} exact={true} />
             <SecureRoute path="/items" component={ItemsList} exact={true}/>
-
+            <SecureRoute path="/coral/show/:id" component={ItemDetail('coral')} exact={true} />
+            <SecureRoute path="/animal/show/:id" component={ItemDetail('animal')} exact={true} />
+            <SecureRoute path="/coral/add" component={AddEditItem('add', 'coral')} exact={true} />
+            <SecureRoute path="/animal/add" component={AddEditItem('add', 'animal')} exact={true} />
             <Route path="/" exact={true}>
               <Redirect to="/home" />
             </Route>

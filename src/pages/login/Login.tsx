@@ -12,15 +12,27 @@ import {
 } from '@ionic/react';
 import {FormDescription, BuildForm} from '../../services/utils/form-builder';
 import {RouteComponentProps} from 'react-router';
+import {AquariumUserResponse, UserClient, UserResponse} from '../../services/rest/interface';
 import {executeDelayed} from '../../services/utils/async-helpers';
+import {LoginRequest} from '../../services/rest/interface';
+import {
+    AquariumResult,
+    AquariumsResult, currentAqaurium,
+    fetchAquariumAction,
+    fetchAquariumActions,
+    fetchAquariumsAction,
+    loggedIn
+} from '../../services/actions/users';
 import { useDispatch } from 'react-redux';
 import store, {AppDispatch} from "../../services/store";
-import {LoginRequest, UserClient} from "../../services/rest/interface";
 import {IConfig} from "../../services/rest/iconfig";
-import {loggedIn} from "../../services/actions/users";
-import config from "../../services/rest/server-config"
+import config from "../../services/rest/server-config";
+import { Storage } from '@ionic/storage';
 import {Appstorage} from "../../services/utils/appstorage";
-import Register from "../register/Register";
+import {CoralsResult, fetchCoralsAction} from "../../services/actions/items";
+import {ThunkDispatch} from "redux-thunk";
+import {RootState} from "../../services/reducers";
+
 type formData = Readonly<LoginRequest>;
 
 const formDescription: FormDescription<formData> = {
@@ -40,35 +52,63 @@ export const Login: React.FunctionComponent<RouteComponentProps<any>> = (props) 
 
     const dispatch = useDispatch();
 
-    const accessheader = new IConfig();
-    const userClient = new UserClient(accessheader, config.host)
 
     const submit = (loginData: LoginRequest) => {
         dispatch(loading(true));
+
+        const accessheader = new IConfig();
+
+        const userClient = new UserClient(accessheader, config.host);
+        const thunkDispatch = dispatch as ThunkDispatch<RootState, null, AquariumsResult>;
+        const aquariumThunkDispatch = dispatch as ThunkDispatch<RootState, null, AquariumResult>;
+
         userClient.login(loginData)
             .then((loginInfo) => {
                 if(loginInfo.hasError == false) {
-                    const authresponse = loggedIn(loginInfo);
-                    dispatch(authresponse);
+                    if (loginInfo.data instanceof UserResponse) {
+                        const authresponse = loggedIn(loginInfo.data);
 
-                    const jwtstore = new Appstorage();
+                        dispatch(authresponse);
+                        const jwtstore = new Appstorage();
+                        console.log(authresponse);
+                        Promise.all([jwtstore.set('user', JSON.stringify((loginInfo.data?.user && typeof loginInfo.data?.user === 'object') ? loginInfo.data?.user : {})),
+                            jwtstore.set('authentication', JSON.stringify((loginInfo.data?.authenticationInformation && typeof loginInfo.data?.authenticationInformation === 'object') ? loginInfo.data?.authenticationInformation : {}))]
+                        )
+                            .then
+                            (
+                                x => {
 
-                    Promise.all([
-                    jwtstore.set('user', JSON.stringify((loginInfo.data?.user && typeof loginInfo.data?.user === 'object')
-                        ? loginInfo.data?.user : {})),
-                    jwtstore.set('authentication', JSON.stringify((loginInfo.data?.authenticationInformation &&
-                        typeof loginInfo.data?.authenticationInformation === 'object')
-                        ? loginInfo.data?.authenticationInformation : {}))
-                    ]).then(
-                        x =>
-                        {
-                            executeDelayed(200, () => props.history.replace('/home'))
-                        }
-                    )
+
+                                    thunkDispatch(fetchAquariumsAction()).then(
+                                        x =>
+                                        {
+                                            if(Array.isArray(x.payload))
+                                            {
+                                                aquariumThunkDispatch(fetchAquariumAction(x.payload[0].aquarium?.id!)).then(aquarium =>
+                                                    {
+                                                        jwtstore.set('aquarium', JSON.stringify((aquarium.payload && typeof aquarium.payload === 'object') ? aquarium.payload : {}))
+
+                                                    }
+                                                );
+                                                store.dispatch(currentAqaurium(x.payload[0].aquarium!));
+                                            }
+
+
+                                        }
+                                    );
+
+                                    executeDelayed(200, () => props.history.replace('/home'))
+                                }
+                            )
+                    }
+                    else
+                    {
+                        dispatch(error('Error while logging in: ' + loginInfo.errorMessages));
+                    }
                 }
                 else
                 {
-                    dispatch(error('Username or Password are incorrect'));
+                    dispatch(error('Error while logging in: ' + loginInfo.errorMessages));
                 }
             })
             .catch((err: Error) => {
@@ -89,7 +129,6 @@ export const Login: React.FunctionComponent<RouteComponentProps<any>> = (props) 
 
             <IonContent>
                 <Form handleSubmit={submit}/>
-                <IonButton expand="block"  onClick={() =>props.history.replace('/register') }>No Account? Register</IonButton>
             </IonContent>
         </IonPage>
     );
